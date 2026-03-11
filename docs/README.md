@@ -83,3 +83,55 @@ MainProgram (main.cob)
 | Debit Guard | Debits are rejected if the requested amount exceeds the current balance |
 | Balance Range | Balances support values from **0.00** to **999,999.99** |
 | Persistence | Balance is stored in memory only; no file or database persistence |
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Main as MainProgram<br/>(main.cob)
+    participant Ops as Operations<br/>(operations.cob)
+    participant Data as DataProgram<br/>(data.cob)
+
+    User->>Main: Start program
+    loop Until user selects Exit
+        Main->>User: Display menu (1-4)
+        User->>Main: Enter choice
+
+        alt Choice 1 — View Balance
+            Main->>Ops: CALL 'Operations' USING 'TOTAL '
+            Ops->>Data: CALL 'DataProgram' USING 'READ', BALANCE
+            Data-->>Ops: Return current balance
+            Ops-->>User: Display balance
+
+        else Choice 2 — Credit Account
+            Main->>Ops: CALL 'Operations' USING 'CREDIT'
+            Ops->>User: Prompt for credit amount
+            User->>Ops: Enter amount
+            Ops->>Data: CALL 'DataProgram' USING 'READ', BALANCE
+            Data-->>Ops: Return current balance
+            Ops->>Ops: ADD amount TO balance
+            Ops->>Data: CALL 'DataProgram' USING 'WRITE', BALANCE
+            Data-->>Ops: Balance updated
+            Ops-->>User: Display new balance
+
+        else Choice 3 — Debit Account
+            Main->>Ops: CALL 'Operations' USING 'DEBIT '
+            Ops->>User: Prompt for debit amount
+            User->>Ops: Enter amount
+            Ops->>Data: CALL 'DataProgram' USING 'READ', BALANCE
+            Data-->>Ops: Return current balance
+            alt Balance >= Amount
+                Ops->>Ops: SUBTRACT amount FROM balance
+                Ops->>Data: CALL 'DataProgram' USING 'WRITE', BALANCE
+                Data-->>Ops: Balance updated
+                Ops-->>User: Display new balance
+            else Insufficient funds
+                Ops-->>User: Display "Insufficient funds"
+            end
+
+        else Choice 4 — Exit
+            Main->>User: Display "Goodbye!"
+        end
+    end
+```
